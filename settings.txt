@@ -1,0 +1,19 @@
+moskva
+2
+
+
+------------------------------------
+Первая строка - регион поиска объявлений
+Вторая строка - частота запросов в минутах (рекомедуется делать не чаще 2х минут)
+
+------------------------------------
+Города
+Москва - moskva
+Санкт-Петербург - sankt-peterburg
+Все регионы - all
+Нижний Новгород - nizhniy_novgorod
+Москва и облать - moskva_i_mo
+Астрахань - astrahan
+
+Остальные города можно вытянуть из URL
+После www.avito.ru между слэшей указан регион: https://www.avito.ru/sankt-peterburg/kvartiry/prodam-ASgBAgICAUSSA8YQ?f=ASgBAQICAkSSA8YQwMENuv03AUCQvg0Ulq41&s=104
