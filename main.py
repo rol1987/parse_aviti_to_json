@@ -1,30 +1,14 @@
 import avito
-import schedule
-import way_to_file
 
-def main(frequency):
-    avito.get_data()
-    # schedule.every().day.at("17:19").do(avito.get_data, number_pages)
-    print('START')
-    schedule.every(frequency).minutes.do(avito.get_data)
+def restart(frequency, sity, room, min_floor, max_floor):
+    avito.get_data(frequency, sity, room, min_floor, max_floor)
 
-    while True:
-        schedule.run_pending()
-    
-if __name__ == '__main__':
-    def start():
-        way_settings = way_to_file.way_settings()
-        file_settings = open(way_settings, "r", encoding='utf-8')
-        line = file_settings.readlines()
-        frequency = int(line[1])
-        file_settings.close
-        main(frequency)
-    start()
-
-def restart():
-    way_settings = way_to_file.way_settings()
-    file_settings = open(way_settings, "r", encoding='utf-8')
-    line = file_settings.readlines()
-    frequency = int(line[1])
-    file_settings.close
-    main(frequency)
+def start():
+    sity = input('Введите город (например moskva): ')
+    room = int(input('Количество комнат в квартире: '))
+    min_floor = int(input('Min rоличество этажей в доме :'))
+    max_floor = int(input('Max rоличество этажей в доме :'))
+    frequency = ""
+    # frequency = int(input('Задайте частоту парсинга в минутах: '))
+    res = avito.get_data(frequency, sity, room, min_floor, max_floor)
+    return res

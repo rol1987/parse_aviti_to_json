@@ -3,24 +3,16 @@ import way_to_file
 import connect_and_save
 import pars_page
 
-def get_data():
+def get_data(frequency, sity, room, min_floor, max_floor):
 
     # Путь к файлам
     way_html = way_to_file.way_html()
     way_chromedriver = way_to_file.way_chromedriver()
-    way_settings = way_to_file.way_settings()
-
-    # Откроем файл с настройками и возьмем от туда URL
-    file_settings = open(way_settings, "r", encoding='utf-8')
-    line = file_settings.readlines()
-    sity = line[0]
-    file_settings.close
 
     # Скачиваем страницу
     url = f"https://www.avito.ru/{sity}/kvartiry/prodam/vtorichka-ASgBAQICAUSSA8YQAUDmBxSMUg?f=ASgBAQICAkSSA8YQwMENuv03AkDmBxSMUpC~DRSWrjU&s=104"
     
-    print("URL получен")
-    driver = connect_and_save.connect(url, way_chromedriver)
+    driver = connect_and_save.connect(url, way_chromedriver, frequency, sity, room, min_floor, max_floor)
 
     # Записываем страницу в файл
     with open(way_html, 'w', encoding='utf-8') as file_write:
@@ -31,4 +23,5 @@ def get_data():
         f = file_read.read()
 
     # Парсим и записываем в Excel
-    pars_page.pars_page(f)
+    res = pars_page.pars_page(f, frequency, sity, room, min_floor, max_floor)
+    return res

@@ -7,13 +7,12 @@ import time
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 import main
 
-def connect(url, full_path_chromedriver):
+def connect(url, full_path_chromedriver, frequency, sity, room, min_floor, max_floor):
     caps = DesiredCapabilities().CHROME
     # caps["pageLoadStrategy"] = "normal"
     # caps["pageLoadStrategy"] = "eager" 
     caps["pageLoadStrategy"] = "none"
 
-    print("Подключение")
     useragent = UserAgent()
     option = webdriver.ChromeOptions()
 
@@ -31,8 +30,8 @@ def connect(url, full_path_chromedriver):
         driver.get(url)
         time.sleep(5)
     except:
-        print('Ошибка соединения с сервером')
-        main.restart()
+        print('Ошибка соединения с сервером/ Попытка повторного подключения....')
+        main.restart(frequency, sity, room, min_floor, max_floor)
     finally:
         driver.close
         driver.quit

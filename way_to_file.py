@@ -33,9 +33,16 @@ def way_data():
     return full_path
 
 # формируем путь к файлу json_temp.json
-def way_json():
+def way_json_temt():
     cwd = os.path.dirname(__file__)
     file_name = 'json_temp.json'
+    full_path = os.path.join(cwd, file_name)
+    return full_path
+
+# формируем путь к файлу json_temp.json
+def way_json():
+    cwd = os.path.dirname(__file__)
+    file_name = 'base'
     full_path = os.path.join(cwd, file_name)
     return full_path
 

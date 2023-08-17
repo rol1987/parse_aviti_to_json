@@ -1,17 +1,12 @@
 import bs4
 import lxml
-from pprint import pprint
 import re
 import pandas as pd
 import datetime
-import telebot
 import way_to_file
-import emoji
-import os
 import json
 
-def pars_page(f):
-    print("начинаем парсить")
+def pars_page(f, frequency, sity, room, min_floor, max_floor):
     soup = bs4.BeautifulSoup(f, 'lxml')
 
     # генерируем список всех объявлений на странице
@@ -35,7 +30,21 @@ def pars_page(f):
     ad_new = 0
     for item in ad_card:
         # Создаем словарь
-        ad_dic = {'ID': '', 'Дата размещения объявления': '', 'Время добавления записи в файл': '', 'Ссылка': '', 'Название объявления': '', 'Количество комнат': '', 'Площадь': '', 'Этаж': '', 'Цена': '', 'Цена за кв. метр': '', 'Место нахождения': '', 'Станция метро': '', 'Аналитика Авито (рыночная цена)': ''}
+        ad_dic = {'ID': '',
+                  'Дата размещения объявления': '',
+                  'Время добавления записи в файл': '',
+                  'Ссылка': '',
+                  'Название объявления': '',
+                  'Количество комнат': '',
+                  'Площадь': '',
+                  'Этаж': '',
+                  'Этажность дома': '',
+                  'Цена': '',
+                  'Цена за кв. метр': '',
+                  'Место нахождения': '',
+                  'Станция метро': '',
+                  'Аналитика Авито (рыночная цена)': '',
+                  'Количество завершенных объявлений': ''}
 
         # Парсим ссылку на объявление
         ad_link = f"https://www.avito.ru{item.find('a')['href']}"
@@ -50,7 +59,6 @@ def pars_page(f):
         else:
             ad_new += 1 # Считаем количество новых объявлений
             ad_link_list.append(ad_link) # Наполняем список ссылками объявлений для отправки в телеграмм
-        print(f'{ad_new} новых объявлений!!!')
 
         # Парсим название объявления
         ad_name = item.find('h3').text
@@ -58,21 +66,29 @@ def pars_page(f):
 
         # Из названия объявления достаем тип недвижимости: квартира/аппартамент/что-то иное
         if ad_name_split[0] in ad_name_split:
-            ad_type = ad_name_split[0]
+            try:
+                ad_type = re.search(r'\d{1,2}', ad_name_split[0]).group(0)
+                if int(ad_type) != room: continue
+            except:
+                ad_type = ad_name_split[0]    
         else:
             ad_type = ''
 
         # Из названия объявления достаем площадь недвижимости
         if ad_name_split[1] in ad_name_split:
-            ad_area = ad_name_split[1]
+            ad_area = int(re.search(r'\d{1,4}', ad_name_split[1]).group(0))
         else:
             ad_area = ''
 
         # Из названия объявления достаем этаж недвижимости
         if ad_name_split[2] in ad_name_split:
-            ad_floor = ad_name_split[2]
+            ad_floor = int(re.search(r'\d{1,2}', ad_name_split[2]).group(0))
+            ad_floor_total = re.search(r'/\d{1,2}', ad_name_split[2]).group(0)
+            ad_floor_total = int(re.sub("/", "", ad_floor_total))
+            if ad_floor_total < min_floor or ad_floor_total > max_floor: continue
         else:
             ad_floor = ''
+            ad_floor_total = ''
 
         # Парсим цену объявления
         ad_price = item.find('p', {"data-marker": "item-price"}).text
@@ -104,6 +120,13 @@ def pars_page(f):
         # Парсим дату размещения объявления
         ad_data_marker = item.find('p', {"data-marker": "item-date"}).text
 
+        # Парсим количество завершенных объявлений (если это указано)
+        if "завершённых" in item.text:
+            print('Есть зевершенные')
+            ad_completed = item.find('span', class_='iva-item-text-Ge6dR').text
+        else:
+            ad_completed = ''
+
         # Записываем все данные по объявлению в словарь
         ad_dic['ID'] = ad_id
         ad_dic['Ссылка'] = ad_link
@@ -117,45 +140,36 @@ def pars_page(f):
         ad_dic['Количество комнат'] = ad_type
         ad_dic['Площадь'] = ad_area
         ad_dic['Этаж'] = ad_floor
-        # ad_dic['Время добавления записи в файл'] = datetime.datetime.now() 
+        ad_dic['Этажность дома'] = ad_floor_total
+        ad_dic['Количество завершенных объявлений'] = ad_completed
+        ad_dic['Время добавления записи в файл'] = str(datetime.datetime.now()) 
 
         # наполняем список объявлений словарями
         ad_list.append(ad_dic)
 
+    current_date = datetime.date.today()
     
-        # Записываем в json
-    with open(way_to_file.way_json(), 'w', encoding='utf-8') as file:
+    # Записываем во временный json
+    with open(way_to_file.way_json_temt(), 'w', encoding='utf-8') as json_file_temp:
         data = json.dumps(ad_list, ensure_ascii=False, indent=4)
-        file.write(data)
-    
-
+        json_file_temp.write(data)
     
     # Записываем в Exel
-    # xl = pd.ExcelFile(way_to_file.way_data())
-    # df = pd.DataFrame.from_dict(ad_list)
-    # df1 = xl.parse('Sheet1')
-    # newData = pd.concat([df1, df])
-    # newData.to_excel((way_to_file.way_data()), index=False)
+    xl = pd.ExcelFile(way_to_file.way_data())
+    df = pd.DataFrame.from_dict(ad_list)
+    df1 = xl.parse('Sheet1')
+    newData = pd.concat([df1, df])
+    newData.to_excel((way_to_file.way_data()), index=False)
+    xl.close()
+
+    # Записываем в json
+    excel_data_df = pd.read_excel(way_to_file.way_data(), sheet_name='Sheet1')
+    thisisjson = excel_data_df.to_json(orient='records')
+    thisisdict = json.loads(thisisjson)
+    with open(f'{way_to_file.way_json()}_{sity}_{current_date}.json', 'w', encoding='utf-8') as json_file:
+        data = json.dumps(thisisdict, ensure_ascii=False, indent=4)
+        json_file.write(data)
 
     # Вычисляем дату, когда данные со страницы были распарсены
-    now = datetime.datetime.now()
-    print(f"Страница распарсена в {now}")
-
-    # Отправляем данные в телеграмм
-    # token = f'6273197682:AAFtHg1veb8o8iWbIEXdgNEuXky8WQs1WHE'  
-    # if ad_new > 0:
-    #     bot = telebot.TeleBot(token)
-    #     id_users = ['5139171378', '772382203']
-    #     for id_user in id_users:
-    #         try:
-    #             bot.send_message(chat_id=id_user, text=[f'{ad_new} новых объявлений'])
-    #             kol = 0
-    #             for item in ad_link_list:
-    #                 if ad_analytics_price_list[kol] == 'Рыночная цена':
-    #                     bot.send_message(chat_id=id_user, text=f"{emoji.emojize(':thumbs_up:')} {ad_analytics_price_list[kol]}: {ad_price_list[kol]:,}\n{item}")
-    #                 else:
-    #                     bot.send_message(chat_id=id_user, text=f"Цена: {ad_price_list[kol]:,}\n{item}")
-    #                 kol += 1
-    #         except:
-    #             print(f'Пользователь ID = {id_user} не нажал START в телеграм боте')
-    #             continue  
+    print(f"Парсинг страницы закончен в {datetime.datetime.now()}")
+    return f'{ad_new} новых объявлений'
